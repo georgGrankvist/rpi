@@ -1,13 +1,11 @@
 ---
 description: Create detailed implementation plans through interactive research and iteration
-model: claude-opus-4-6
+model: opus
 ---
 
 # Implementation Plan
 
 You are tasked with creating detailed implementation plans through an interactive, iterative process. You should be skeptical, thorough, and work collaboratively with the user to produce high-quality technical specifications.
-
-**Path convention**: Plans are written under the **docs root** (directory containing `research/` and `planning/`). Default docs root: `cursor-docs`. Use the planning directory: `{docs_root}/planning/`. Resolve the docs root by checking conversation context or running `echo $AI_DOCS_DIR` if needed.
 
 ## Initial Response
 
@@ -50,13 +48,16 @@ Then wait for the user's input.
 
 2. **Spawn initial research sub-agents to gather context**:
    Before asking the user any questions, use specialized sub-agents to research in parallel:
+   - Delegate to **/codebase-locator** to find all files related to the ticket/task
+   - Delegate to **/codebase-analyzer** to understand how the current implementation works
+   - Delegate to **/research-locator** to find any existing research or plans about this feature
 
    Invoke these sub-agents in parallel using the Task tool:
 
    ```
-   Task(subagent_type="codebase-locator", prompt="Find all files related to [feature/component]")
-   Task(subagent_type="codebase-analyzer", prompt="Analyze how [system] currently works")
-   Task(subagent_type="research-locator", prompt="Find existing research or plans in the docs root related to [feature/topic]")
+   Task(prompt="Use /codebase-locator to find all files related to [feature/component]")
+   Task(prompt="Use /codebase-analyzer to analyze how [system] currently works")
+   Task(prompt="Use /research-locator to find existing research or plans in rpi/ related to [feature/topic]")
    ```
 
    These sub-agents will:
@@ -75,7 +76,6 @@ Then wait for the user's input.
    - Identify any discrepancies or misunderstandings
    - Note assumptions that need verification
    - Determine true scope based on codebase reality
-   - Identify project build tooling (Maven, Gradle, npm, pnpm, nx, etc.) for each touched module
 
 5. **Present informed understanding and focused questions**:
 
@@ -109,15 +109,32 @@ After getting initial clarifications:
 
 3. **Spawn parallel sub-agents for comprehensive research**:
    Create multiple Task sub-agents to research different aspects concurrently.
-   Always specify `subagent_type` — never use `subagent_type: "explore"`:
+   Use the right sub-agent for each type of research:
+
+   **For deeper investigation:**
+   - **/codebase-locator** - To find more specific files (e.g., "find all files that handle [specific component]")
+   - **/codebase-analyzer** - To understand implementation details (e.g., "analyze how [system] works")
+   - **/codebase-pattern-finder** - To find similar features we can model after
+
+   **For historical context:**
+   - **/research-locator** - To find existing research or plans about this area
+   - **/research-analyzer** - To extract key insights from relevant prior research/plans
+
+   Example of spawning multiple sub-agents in parallel:
 
    ```
    // Spawn these concurrently using multiple Task tool calls in one message:
-   Task(subagent_type="codebase-locator", prompt="Find all files related to database schema for [feature]")
-   Task(subagent_type="codebase-analyzer", prompt="Analyze API patterns in [service]")
-   Task(subagent_type="codebase-pattern-finder", prompt="Find similar implementations of [pattern]")
-   Task(subagent_type="research-analyzer", prompt="Extract key decisions from [prior research doc path]")
+   Task(prompt="Use /codebase-locator to find all files related to database schema for [feature]")
+   Task(prompt="Use /codebase-analyzer to analyze API patterns in [service]")
+   Task(prompt="Use /codebase-pattern-finder to find similar implementations of [pattern]")
    ```
+
+   Each sub-agent knows how to:
+   - Find the right files and code patterns
+   - Identify conventions and patterns to follow
+   - Look for integration points and dependencies
+   - Return specific file:line references
+   - Find tests and examples
 
 4. **Wait for ALL sub-agents to complete** before proceeding
 
@@ -167,7 +184,7 @@ Once aligned on approach:
 
 After structure approval:
 
-1. **Write the plan** to `{docs_root}/planning/YYYY-MM-DD-TICKET-description.md`
+1. **Write the plan** to `rpi/planning/YYYY-MM-DD-TICKET-description.md`
    - Format: `YYYY-MM-DD-TICKET-description.md` where:
      - YYYY-MM-DD is today's date
      - TICKET is the ticket number (omit if no ticket)
@@ -228,9 +245,10 @@ After structure approval:
 
 #### Automated Verification:
 
-- [ ] [Tooling-specific command] Tests pass
-- [ ] [Tooling-specific command] Static checks pass (type/lint/analysis where applicable)
-- [ ] [Optional] Build/compile succeeds when feasible and relevant
+- [ ] Tests pass: `npm test` / `./gradlew test`
+- [ ] Type checking passes: `npm run typecheck`
+- [ ] Linting passes: `npm run lint`
+- [ ] Build succeeds: `npm run build`
 
 #### Manual Verification:
 
@@ -245,7 +263,7 @@ After structure approval:
 
 ## Phase 2: [Descriptive Name]
 
-[Similar structure...]
+[Similar structure with both automated and manual success criteria...]
 
 ---
 
@@ -287,7 +305,7 @@ After structure approval:
 
    ```
    I've created the initial implementation plan at:
-   `{docs_root}/planning/YYYY-MM-DD-TICKET-description.md`
+   `rpi/planning/YYYY-MM-DD-TICKET-description.md`
 
    Please review it and let me know:
    - Are the phases properly scoped?
@@ -347,10 +365,10 @@ After structure approval:
 **Always separate success criteria into two categories:**
 
 1. **Automated Verification** (can be run automatically):
-   - Commands specific to the repository's actual tooling
-   - First identify build system/package manager from repo files (e.g. `pom.xml`, `build.gradle`, `package.json`, `nx.json`, lockfiles)
+   - Commands that can be run: `npm test`, `./gradlew test`, etc.
    - Specific files that should exist
-   - Code compilation/type checking where applicable
+   - Code compilation/type checking
+   - Automated test suites
 
 2. **Manual Verification** (requires human testing):
    - UI/UX functionality
@@ -358,24 +376,91 @@ After structure approval:
    - Edge cases that are hard to automate
    - User acceptance criteria
 
+**Format example:**
+
+```markdown
+### Success Criteria:
+
+#### Automated Verification:
+
+- [ ] Database migration runs successfully
+- [ ] All unit tests pass: `npm test`
+- [ ] No linting errors: `npm run lint`
+- [ ] Build succeeds: `npm run build`
+
+#### Manual Verification:
+
+- [ ] New feature appears correctly in the UI
+- [ ] Performance is acceptable with large datasets
+- [ ] Error messages are user-friendly
+- [ ] Feature works correctly on mobile devices
+```
+
+## Common Patterns
+
+### For Database Changes:
+
+- Start with schema/migration
+- Add repository/store methods
+- Update business logic
+- Expose via API
+- Update clients
+
+### For New Features:
+
+- Research existing patterns first
+- Start with data model
+- Build backend logic
+- Add API endpoints
+- Implement UI last
+
+### For Refactoring:
+
+- Document current behavior
+- Plan incremental changes
+- Maintain backwards compatibility
+- Include migration strategy
+
 ## Sub-agent Spawning Best Practices
 
 When spawning research sub-agents:
 
 1. **Spawn multiple sub-agents in parallel** for efficiency - use multiple Task tool calls in a single message
-2. **Always specify `subagent_type`** matching the custom agent name (e.g., `codebase-locator`, `codebase-analyzer`). Never use `subagent_type: "explore"`.
-3. **Each sub-agent should be focused** on a specific area
-4. **Provide clear instructions** including:
+2. **Each sub-agent should be focused** on a specific area
+3. **Use the `model: "fast"` option** for quick exploration tasks
+4. **Use `subagent_type: "explore"`** for codebase research tasks
+5. **Provide clear instructions** including:
+   - Which sub-agent type to invoke (e.g., `[codebase-locator]`, `[codebase-analyzer]`)
    - Exactly what to search for
    - Which directories to focus on
    - What information to extract
-5. **Be EXTREMELY specific about directories**:
+6. **Be EXTREMELY specific about directories**:
    - If the ticket mentions frontend, specify the frontend directory
    - If it mentions a specific service, specify that service's directory
    - Never use generic terms - include the full path context
-6. **Request specific file:line references** in responses
-7. **Wait for all sub-agents to complete** before synthesizing
-8. **Verify sub-agent results**:
+7. **Request specific file:line references** in responses
+8. **Wait for all sub-agents to complete** before synthesizing
+9. **Verify sub-agent results**:
    - If a sub-agent returns unexpected results, spawn follow-up sub-agents
    - Cross-check findings against the actual codebase
    - Don't accept results that seem incorrect
+
+## Example Interaction Flow
+
+```
+User: /create-plan
+Assistant: I'll help you create a detailed implementation plan...
+
+User: We need to add user activity logging. See docs/tickets/TEC-1478.md
+Assistant: Let me read that ticket file completely first...
+
+[Reads file fully]
+
+Now spawning research sub-agents to understand the codebase...
+
+[Spawns codebase-locator and codebase-analyzer in parallel]
+
+Based on the ticket and my research, I understand we need to track user activity events. Before I start planning, I have some questions...
+
+[Interactive process continues...]
+```

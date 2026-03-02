@@ -1,12 +1,10 @@
 ---
-description: Implement technical plans from the docs root planning directory with verification
+description: Implement technical plans from rpi/planning with verification
 ---
 
 # Implement Plan
 
-**Path convention**: Plans live under the **docs root** in the planning directory (default: `cursor-docs/planning`). Resolve the docs root by checking conversation context or running `echo $AI_DOCS_DIR` if needed.
-
-You are tasked with implementing an approved technical plan from the planning directory. These plans contain phases with specific changes and success criteria.
+You are tasked with implementing an approved technical plan from `rpi/planning`. These plans contain phases with specific changes and success criteria.
 
 ## Getting Started
 
@@ -50,15 +48,9 @@ If you encounter a mismatch:
 
 After implementing a phase:
 
-- **Use the verifier sub-agent** to validate the completed work:
-
-  ```
-  Task(subagent_type="verifier", prompt="Verify the completed work for Phase [N]: [brief description of what was implemented]. Check that files exist and contain expected changes, run feasible checks for this repo, and report what passed and failed.")
-  ```
-
-  The verifier will:
+- **Use the **/verifier\*\* sub-agent: Call the verifier sub-agent to validate the completed work. The verifier will:
   - Check that files exist and contain expected changes
-  - Run repo-appropriate checks (identify build tooling from `package.json`, `pom.xml`, `build.gradle`, etc.)
+  - Run linting, type-checking, and build verification
   - Verify the code does what was claimed
   - Provide a verification report
 - Fix any issues reported by the verifier before proceeding

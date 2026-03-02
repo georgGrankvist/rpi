@@ -1,6 +1,6 @@
 ---
 description: Research codebase comprehensively and document findings using sub-agents
-model: claude-opus-4-6
+model: opus
 ---
 
 # Research Codebase
@@ -9,10 +9,9 @@ You are tasked with conducting comprehensive research across the codebase to ans
 
 ## Workflow Context
 
-**Path convention**: Research is written under the **docs root** in the research directory (default: `cursor-docs/research/`). If the user or environment specifies a different docs root, use that. Resolve the docs root by checking conversation context or running `echo $AI_DOCS_DIR` if needed.
-
 This command is part of the **Research → Plan → Implement** workflow:
-- **Output**: `{docs_root}/research/YYYY-MM-DD-TICKET-description.md`
+
+- **Output**: `rpi/research/YYYY-MM-DD-TICKET-description.md`
 - **Next step**: Use output with `/create-plan` command
 
 ## Initial Setup
@@ -22,7 +21,7 @@ When this command is invoked, respond with:
 ```
 I'm ready to research the codebase. Please provide your research question or area of interest, and I'll analyze it thoroughly by spawning specialized sub-agents to explore relevant components and connections.
 
-Output will be saved to the research directory under the docs root.
+Output will be saved to: rpi/research/
 ```
 
 Then wait for the user's research query.
@@ -47,25 +46,26 @@ Then wait for the user's research query.
    We have specialized sub-agents that know how to do specific research tasks:
 
    **For codebase research:**
-   - Use subagent_type `codebase-locator` to find WHERE files and components live
-   - Use subagent_type `codebase-analyzer` to understand HOW specific code works
-   - Use subagent_type `codebase-pattern-finder` to find examples of existing patterns
+   - Delegate to **/codebase-locator** to find WHERE files and components live
+   - Delegate to **/codebase-analyzer** to understand HOW specific code works
+   - Delegate to **/codebase-pattern-finder** to find examples of existing patterns
 
    **For historical context:**
-   - Use subagent_type `research-locator` to find existing research or plans in the docs root
-   - Use subagent_type `research-analyzer` to extract key insights from relevant prior documents
+   - Delegate to **/research-locator** to find existing research or plans in `rpi/research/` and `rpi/planning/`
+   - Delegate to **/research-analyzer** to extract key insights from relevant prior documents
 
    **For web research (only if user explicitly asks):**
-   - Use subagent_type `web-search-researcher` for external documentation and resources
+   - Use the **web-search-researcher** sub-agent for external documentation and resources
    - IF you use web-research sub-agents, instruct them to return LINKS with their findings, and please INCLUDE those links in your final report
 
    Invoke sub-agents in parallel using the Task tool:
+
    ```
    // Example: Spawn these concurrently using multiple Task tool calls in one message
-   Task(subagent_type="codebase-locator", prompt="Find all files and components related to [topic]. Focus on directories: [relevant dirs].")
-   Task(subagent_type="codebase-analyzer", prompt="Analyze how [system/component] works. Explain data flow and key functions with file:line references.")
-   Task(subagent_type="codebase-pattern-finder", prompt="Find examples of [pattern] in the codebase.")
-   Task(subagent_type="research-locator", prompt="Find existing research or plans in the docs root related to [topic].")
+   Task(prompt="Use /codebase-locator to find all files and components related to [topic]. Focus on directories: [relevant dirs].")
+   Task(prompt="Use /codebase-analyzer to analyze how [system/component] works. Explain data flow and key functions with file:line references.")
+   Task(prompt="Use /codebase-pattern-finder to find examples of [pattern] in the codebase.")
+   Task(prompt="Use /research-locator to find existing research or plans in rpi/ related to [topic].")
    ```
 
    The key is to use these sub-agents intelligently:
@@ -85,8 +85,8 @@ Then wait for the user's research query.
 
 5. **Gather metadata for the research document:**
    - Get current git info: branch name, commit hash
-   - Determine output path: `{docs_root}/research/YYYY-MM-DD-TICKET-description.md`
-     - Filename format: `YYYY-MM-DD-TICKET-description.md` where:
+   - Determine appropriate filename: `rpi/research/YYYY-MM-DD-TICKET-description.md`
+     - Format: `YYYY-MM-DD-TICKET-description.md` where:
        - YYYY-MM-DD is today's date
        - TICKET is the ticket number if applicable (omit if no ticket)
        - description is a brief kebab-case description of the research topic
@@ -163,12 +163,14 @@ Then wait for the user's research query.
    - Present a concise summary of findings to the user
    - Include key file references for easy navigation
    - **Suggest next step**:
+
      ```
-     Research saved to: {docs_root}/research/[filename].md
+     Research saved to: rpi/research/[filename].md
 
      Next step: To create an implementation plan based on this research, run:
-     /create-plan [path to research doc] [your task description]
+     /create-plan @rpi/research/[filename].md [your task description]
      ```
+
    - Ask if they have follow-up questions or need clarification
 
 9. **Handle follow-up questions:**
@@ -184,19 +186,21 @@ Then wait for the user's research query.
 When spawning research sub-agents:
 
 1. **Spawn multiple sub-agents in parallel** - use multiple Task tool calls in a single message for efficiency
-2. **Always specify `subagent_type`** matching the custom agent name (e.g., `codebase-locator`, `codebase-analyzer`, `research-locator`). Never use `subagent_type: "explore"` — use the named agents.
-3. **Each sub-agent should be focused** on a specific area or question
-4. **Provide clear instructions** including:
+2. **Use `subagent_type: "explore"`** for all codebase research tasks
+3. **Use `model: "fast"`** for quick exploration tasks to minimize latency and cost
+4. **Each sub-agent should be focused** on a specific area or question
+5. **Provide clear instructions** including:
+   - Which sub-agent type to invoke (prefix with `[codebase-locator]`, `[codebase-analyzer]`, etc.)
    - Exactly what to search for
    - Which directories to focus on
    - What information to extract
-5. **Be specific about directories**:
+6. **Be specific about directories**:
    - If researching frontend, specify frontend directories
    - If researching a specific service, specify that service's directory
    - Include full path context in your prompts
-6. **Request specific file:line references** in responses
-7. **Wait for all sub-agents to complete** before synthesizing
-8. **Verify sub-agent results**:
+7. **Request specific file:line references** in responses
+8. **Wait for all sub-agents to complete** before synthesizing
+9. **Verify sub-agent results**:
    - If a sub-agent returns unexpected results, spawn follow-up sub-agents
    - Cross-check findings against the actual codebase
 

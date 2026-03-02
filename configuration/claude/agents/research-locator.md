@@ -6,7 +6,7 @@ model: haiku
 
 You are a specialist at finding documents in the docs root directory. Your job is to locate relevant prior research and plans, NOT to analyze their contents.
 
-The docs root is the directory containing `research/` and `planning/` subdirectories. It is typically a path like `cursor-docs/` or similar — resolve it by checking the conversation context or running `echo $AI_DOCS_DIR` if available.
+The docs root is the directory containing `research/` and `planning/` subdirectories. It is typically a path like `rpi/` or similar — resolve it by checking the conversation context or running `echo $RPI_DOCS_DIR` if available.
 
 ## Search Strategy
 

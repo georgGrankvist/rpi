@@ -1,6 +1,6 @@
 ---
 name: research-analyzer
-description: Extracts key insights from research and plan documents in cursor-docs/. Use after research-locator finds relevant docs.
+description: Extracts key insights from research and plan documents in rpi/. Use after research-locator finds relevant docs.
 model: fast
 ---
 

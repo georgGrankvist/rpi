@@ -20,11 +20,38 @@ https://github.com/{owner}/{repo}/pull/{pr_number}
 
 If `$ARGUMENTS` is empty, ask the user for a PR URL before proceeding.
 
-### 2. Fetch review comments
+### 2. Fetch unresolved review comments
 
-Use the GitHub MCP tools to list all review comments on the PR. Filter to unresolved/actionable threads — skip any already marked as resolved.
+Use the GitHub MCP tools to fetch only unresolved review threads on the PR. Do not fetch or process resolved threads at all.
 
-If GitHub MCP tools are not available, stop and tell the user to set up the GitHub MCP server first (see `mcp/github.md` in the docs root).
+If GitHub MCP tools are not available, fall back to the `gh` CLI:
+
+```bash
+gh api graphql -f query='
+{
+  repository(owner: "{owner}", name: "{repo}") {
+    pullRequest(number: {pr_number}) {
+      reviewThreads(first: 100) {
+        nodes {
+          isResolved
+          comments(first: 10) {
+            nodes {
+              path
+              line
+              body
+              author { login }
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+```
+
+Filter `nodes` to those where `isResolved: false`. Ignore all resolved threads entirely.
+
+If neither GitHub MCP tools nor `gh` CLI are available, stop and tell the user to set up the GitHub MCP server first (see `mcp/github.md` in the docs root).
 
 ### 3. Assess each comment
 
