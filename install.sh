@@ -44,6 +44,7 @@ case "$TARGET" in
     echo ""
     echo "MCP servers: some skills require MCP setup. See configuration/mcp/ for guides:"
     echo "  GitHub MCP: $CONFIG_DIR/mcp/github.md"
+    echo "  Figma MCP:  $CONFIG_DIR/mcp/figma.md"
     ;;
   claude)
     mkdir -p ~/.claude/agents ~/.claude/commands
@@ -59,6 +60,7 @@ case "$TARGET" in
     echo ""
     echo "MCP servers: some skills require MCP setup. See configuration/mcp/ for guides:"
     echo "  GitHub MCP: $CONFIG_DIR/mcp/github.md"
+    echo "  Figma MCP:  $CONFIG_DIR/mcp/figma.md"
     ;;
   *)
     usage
